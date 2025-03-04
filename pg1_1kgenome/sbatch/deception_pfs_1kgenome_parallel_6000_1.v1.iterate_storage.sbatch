@@ -84,13 +84,14 @@ set -u
 #
 SCRIPT_DIR="/qfs/projects/oddite/peng599/1kgenome_qfs/datalife/tutorials/evaluation_scripts/performance/1000genome_plot/1000genome_perf_number/1kgenome_bin"
 ORIGIN_1KGENOME_DIR="/qfs/projects/oddite/peng599/1kgenome_qfs/1kgenome_sbatch_deception"
-DATASET_DIR_NAME="workspace_1kgenome"
 LINUX_RESOURCE_DETECT="/qfs/projects/oddite/peng599/1kgenome_qfs/linux_resource_detect/remote_data_transfer.sh"
+PREPARE_DATA_SH="/qfs/projects/oddite/peng599/1kgenome_qfs/pg1_1kgenome/sbatch/util00.prepare_data.sh"
 # SIZE_37G_IN_BYTES=$(du -sb ${ORIGIN_1KGENOME_DIR} | grep -o -E '^[0-9]+([.][0-9]+)?')
 # SIZE_37G_IN_KB=$(du -s ${ORIGIN_1KGENOME_DIR} | grep -o -E '^[0-9]+([.][0-9]+)?')
 SIZE_37G_IN_BYTES=38089130668
 SIZE_37G_IN_KB=37346388
 PREV_PWD=$(readlink -f .)
+DATASET_DIR_NAME="workspace_1kgenome"
 
 echo
 echo "PREV_PWD: ${PREV_PWD}"
@@ -327,8 +328,6 @@ echo
 echo "storage_options:"
 echo "${storage_options}"
 echo 
-
-PREPARE_DATA_SH="${PREV_PWD}/sbatch/util00.prepare_data.sh"
 
 ## Iterate over all storage options
 

@@ -1,0 +1,7 @@
+# Data
+1kgenome_sbatch_deception/
+
+# Output files
+*.csv
+*.err
+*.out

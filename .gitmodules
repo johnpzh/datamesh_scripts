@@ -1,0 +1,6 @@
+[submodule "datalife"]
+	path = datalife
+	url = https://github.com/pnnl/datalife.git
+[submodule "linux_resource_detect"]
+	path = linux_resource_detect
+	url = https://github.com/candiceT233/linux_resource_detect.git

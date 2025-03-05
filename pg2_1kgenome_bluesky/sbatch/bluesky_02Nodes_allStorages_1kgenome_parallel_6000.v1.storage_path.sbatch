@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name="deception_2nodes_nfs_6000_1"
+#SBATCH --job-name="bluesky_02Nodes_allStorages_6000"
 #SBATCH --partition=slurm
 ######SBATCH --exclude=dc[119,077]
 #SBATCH --account=datamesh
 #SBATCH -N 2
-#SBATCH --time=24:24:24
-#SBATCH --output=R.%j.%x.out
-#SBATCH --error=R.%j.%x.err
+#SBATCH --time=04:44:44
+#SBATCH --output=R.%x.%j.out
+#SBATCH --error=R.%x.%j.err
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=zhen.peng@pnnl.gov
 #SBATCH --exclusive
@@ -79,48 +79,29 @@ printenv
 # set -euo pipefail
 set -u
 
-#
-# Some path settings
-#
+#####################
+# Path settings
+#####################
 SCRIPT_DIR="/qfs/projects/oddite/peng599/1kgenome_qfs/datalife/tutorials/evaluation_scripts/performance/1000genome_plot/1000genome_perf_number/1kgenome_bin"
-ORIGIN_1KGENOME_DIR="/qfs/projects/oddite/peng599/1kgenome_qfs/1kgenome_sbatch_deception"
+NFS_ORIGIN_1KGENOME_DIR="/qfs/projects/oddite/peng599/1kgenome_qfs/1kgenome_sbatch_deception"
+BEEGFS_ORIGIN_1KGENOME_DIR="/rcfs/projects/datamesh/peng599/1kgnome_rcfs/1kgenome_sbatch_deception"
 LINUX_RESOURCE_DETECT="/qfs/projects/oddite/peng599/1kgenome_qfs/linux_resource_detect/remote_data_transfer.sh"
-PREPARE_DATA_SH="/qfs/projects/oddite/peng599/1kgenome_qfs/pg1_1kgenome/sbatch/util00.prepare_data.sh"
+PREPARE_DATA_SH="/qfs/projects/oddite/peng599/1kgenome_qfs/utils/util01.prepare_data.v2.sh"
 # SIZE_37G_IN_BYTES=$(du -sb ${ORIGIN_1KGENOME_DIR} | grep -o -E '^[0-9]+([.][0-9]+)?')
 # SIZE_37G_IN_KB=$(du -s ${ORIGIN_1KGENOME_DIR} | grep -o -E '^[0-9]+([.][0-9]+)?')
 SIZE_37G_IN_BYTES=38089130668
 SIZE_37G_IN_KB=37346388
 PREV_PWD=$(readlink -f .)
-DATASET_DIR_NAME="workspace_1kgenome"
+DATASET_DIR_NAME="workspace.${SLURM_JOBID}.${SLURM_JOB_NAME}"
+
 
 echo
 echo "PREV_PWD: ${PREV_PWD}"
 echo
 
-# SHARE="NFS" # PFS NFS
-
-# if [ "$SHARE" == "NFS" ]
-# then
-#     echo "Running on NFS"
-#     SCRIPT_DIR=/qfs/projects/oddite/peng599/1kgenome/datalife/tutorials/evaluation_scripts/performance/1000genome_plot/1000genome_perf_number/1kgenome_bin
-#     CURRENT_DIR=/qfs/projects/oddite/peng599/1kgenome/1kgenome_sbatch_deception #NFS
-#     # CURRENT_DIR=/qfs/projects/oddite/lenny/hermes_scripts/1kgenome_sbatch_deception #NFS
-# else
-#     echo "Running on PFS" # but this behaves like NFS
-#     # !!! change PFS path
-#     PFS_DIR=/rcfs/projects/chess #/files0/oddite
-#     SCRIPT_DIR=$PFS_DIR/$USER/1000genome-workflow/bin
-#     CURRENT_DIR=$PFS_DIR/$USER/1kgenome_sbatch_deception #PFS
-#     # mkdir -p $SCRIPT_DIR $CURRENT_DIR
-#     # Candice: commented out to avoid copying in trials
-#     # if ! [ -s "$SCRIPT_DIR" ]; then cp -r /qfs/projects/oddite/peng599/1kgenome/datalife/tutorials/evaluation_scripts/performance/1000genome_plot/1000genome_perf_number/1kgenome_bin/* $SCRIPT_DIR/; fi
-#     # if ! [ -s "$CURRENT_DIR" ]; then cp -r /qfs/projects/oddite/peng599/1kgenome/datalife/tutorials/evaluation_scripts/performance/1000genome_plot/1000genome_perf_number/sbatch/* $CURRENT_DIR/; fi
-#     if ! [ -s "$SCRIPT_DIR" ]; then echo "No files in $SCRIPT_DIR"; realpath $SCRIPT_DIR/*; fi
-#     if ! [ -s "$CURRENT_DIR" ]; then echo "No files in $CURRENT_DIR"; realpath $CURRENT_DIR/*; fi
-#     # # clear intermediate and freq output
-#     # rm -rf $CURRENT_DIR/chr*-freq* $CURRENT_DIR/tmp* $CURRENT_DIR/merged_chr* $CURRENT_DIR/chr*.tar.gz
-# fi
-
+##############
+# Preparation
+##############
 
 CHROMOSOMES=10
 NUM_NODES=$SLURM_JOB_NUM_NODES
@@ -264,26 +245,42 @@ START_FREQUENCY() {
 
 
 function GET_STORAGE_OPTIONS() {
-    local_dir_config="local_dir_config.csv"
-    if [ ! -s ${local_dir_config} ]; then
+    filename="local_dir_config_${SLURM_JOBID}_${SLURM_JOB_NAME}"
+    local_dir_config="dir_config_${SLURM_JOBID}_${SLURM_JOB_NAME}.csv"
+    full_path="${PREV_PWD}/${filename}.csv"
+    
+    # Remove it, because different clusters might have different storage options.
+    rm -f "${full_path}"
+    if [ ! -s ${full_path} ]; then
         # generate the storage config file
         if [ -s ${LINUX_RESOURCE_DETECT} ]; then
             echo
             echo "Running LINUX_RESOURCE_DETECT ..."
             echo
-            bash ${LINUX_RESOURCE_DETECT}
+            set -x
+            bash ${LINUX_RESOURCE_DETECT} -o "${local_dir_config}"
+            set +x
             echo
-            echo "Generated ${local_dir_config}"
+            echo "Generated ${full_path}"
             echo
         else
-            echo "Error: not found ${local_dir_config} nor linux_resource_detect (${LINUX_RESOURCE_DETECT})"
+            echo "Error: not found ${full_path} nor linux_resource_detect (${LINUX_RESOURCE_DETECT})"
             exit -1
         fi
     fi
 
+    # Skip `people/$USER` to avoid the interference and the size limit in home directory.
     set -x
-    storage_options=$(csvsql --query "SELECT Actual_Path, Type FROM local_dir_config WHERE Avail_KB > ${SIZE_37G_IN_KB} GROUP BY Type" ${local_dir_config} | tail -n +2)
+    STORAGE_OPTIONS=$(csvsql --query "\
+SELECT Actual_Path, Type \
+FROM ${filename} \
+WHERE Avail_KB > ${SIZE_37G_IN_KB} \
+  AND Actual_Path NOT LIKE '%people/${USER}%' \
+GROUP BY Type" \
+${full_path} | tail -n +2)
     set +x
+
+    rm -f "${full_path}"
 }
 
 
@@ -291,10 +288,16 @@ function CLEANUP() {
 
     start_time=$(date +%s.%N)
 
-    rm -rf chr*-freq* 
-    rm -rf chr*.tar.gz
-    find . -type d -name "output_no_sift" -depth -exec rm -rf {} \;
-    find . -type d -name "plots_no_sift" -depth -exec rm -rf {} \;
+    # rm -rf chr*-freq* 
+    # rm -rf chr*.tar.gz
+    # find . -depth -type d -name "output_no_sift" -exec rm -rf {} \;
+    # find . -depth -type d -name "plots_no_sift" -exec rm -rf {} \;
+
+    # CURRENT_DIR contains either copied local data or created symlinks.
+    cd "${PREV_PWD}"
+    set -x
+    rm -rf "${CURRENT_DIR}"
+    set +x
 
     end_time=$(date +%s.%N)
     exe_time=$(echo "${end_time} - ${start_time}" | bc -l)
@@ -315,50 +318,76 @@ hostname;date;
 # echo "Making directory at $CURRENT_DIR ..."
 # srun -n$NUM_NODES -w $host_list --exclusive mkdir -p $CURRENT_DIR
 
+prepare_data_time_list=()
 individuals_time_list=()
 merge_sifting_time_list=()
 mutation_overlap_time_list=()
 frequency_time_list=()
+workflow_time_list=()
 total_time_list=()
-col_header="tasks"
+col_header="Tasks"
 
 ## Get Storage options
 GET_STORAGE_OPTIONS
 echo 
-echo "storage_options:"
-echo "${storage_options}"
+echo "STORAGE_OPTIONS:"
+echo "${STORAGE_OPTIONS}"
 echo 
 
 ## Iterate over all storage options
 
 TT_TIME_START=$(date +%s.%N)
 
-for option in ${storage_options}; do
+for option in ${STORAGE_OPTIONS}; do
     IFS="," read -ra tmp_opt <<< "${option}"
     root_path=${tmp_opt[0]}
     root_type=${tmp_opt[1]}
 
+    total_time_start=$SECONDS
     # Prepare the data
+    
     CURRENT_DIR="${root_path}/${DATASET_DIR_NAME}"
+
+    if [ ${root_type} = "nfs" ]; then
+        ORIGIN_1KGENOME_DIR="${NFS_ORIGIN_1KGENOME_DIR}"
+    elif [ ${root_type} = "beegfs" ]; then
+        ORIGIN_1KGENOME_DIR="${BEEGFS_ORIGIN_1KGENOME_DIR}"
+    elif [ -d ${BEEGFS_ORIGIN_1KGENOME_DIR} ]; then
+        ORIGIN_1KGENOME_DIR="${BEEGFS_ORIGIN_1KGENOME_DIR}"
+    elif [ -d ${NFS_ORIGIN_1KGENOME_DIR} ]; then
+        ORIGIN_1KGENOME_DIR="${NFS_ORIGIN_1KGENOME_DIR}"
+    else
+        echo "Error: both ${NFS_ORIGIN_1KGENOME_DIR} and ${BEEGFS_ORIGIN_1KGENOME_DIR} do not exist. Exit."
+        exit -1
+    fi
+
     export CURRENT_DIR
     export root_type
     export SIZE_37G_IN_BYTES
     export ORIGIN_1KGENOME_DIR
+    start_time=$SECONDS
     if [ "${root_type}" = "beegfs" ] || [ "${root_type}" = "nfs" ]; then
         # Shared storage only need copy once
+        set -x
         bash "${PREPARE_DATA_SH}"
+        set +x
     else
         # Local storage needs to be done by each nodes
         for node in ${list[@]}; do
+            set -x
             srun -w ${node} -n1 -N1 --exclusive bash "${PREPARE_DATA_SH}" &
+            set +x
         done
     fi
     wait
+    duration=$(($SECONDS - $start_time))
+    echo "prepare_data : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
+    prepare_data_time_list+=(${duration})
 
-    col_header+=",${root_type}"
+    col_header+=",${root_type}(${root_path})"
 
 
-    total_start_time=$SECONDS
+    workflow_start_time=$SECONDS
 
     #
     # Run the workflow
@@ -433,20 +462,27 @@ for option in ${storage_options}; do
     frequency_time_list+=(${duration})
 
 
-    total_duration=$(($SECONDS - $total_start_time))
-    echo "All done : $(($total_duration / 60)) minutes and $(($total_duration % 60)) seconds elapsed ($total_duration secs)."
-    total_time_list+=(${duration})
+    duration=$(($SECONDS - $workflow_start_time))
+    echo "All_tasks_done : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
+    workflow_time_list+=(${duration})
 
     # set -x
     # check output
     # echo "Checking all output ----------------"
     # srun -n$NUM_NODES -w $host_list --exclusive du -h $CURRENT_DIR
 
+    duration=$(($SECONDS - $total_time_start))
+    echo "All_tasks+Prepare_data : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
+    total_time_list+=(${duration})
+
     # LOCAL_CLEANUP
     echo
     echo "Cleaning up"
     echo 
     CLEANUP
+
+    # Change back PWD
+    cd "${PREV_PWD}"
 
 done # Iterate over all storage options
 
@@ -458,7 +494,7 @@ sacct -j $SLURM_JOB_ID -o jobid,submit,start,end,state
 ###########################
 
 # Save the times
-collect_file="${PREV_PWD}/R.${SLURM_JOBID}.${SLURM_JOB_NAME}.all_times.csv"
+collect_file="${PREV_PWD}/R.${SLURM_JOB_NAME}.${SLURM_JOBID}.all_times.csv"
 :> ${collect_file}
 echo "${col_header}" >> ${collect_file}
 
@@ -486,7 +522,19 @@ for time in "${frequency_time_list[@]}"; do
 done
 echo >> ${collect_file}
 
-echo -n "total_time(s)" >> ${collect_file}
+echo -n "all_tasks(s)" >> ${collect_file}
+for time in "${workflow_time_list[@]}"; do
+    echo -n ",${time}" >> ${collect_file}
+done
+echo >> ${collect_file}
+
+echo -n "prepare_data(s)" >> ${collect_file}
+for time in "${prepare_data_time_list[@]}"; do
+    echo -n ",${time}" >> ${collect_file}
+done
+echo >> ${collect_file}
+
+echo -n "all_tasks+prep_data(s)" >> ${collect_file}
 for time in "${total_time_list[@]}"; do
     echo -n ",${time}" >> ${collect_file}
 done

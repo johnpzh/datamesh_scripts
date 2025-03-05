@@ -1,0 +1,1 @@
+export GLOGAL_TT=$(basename $0)

@@ -15,7 +15,18 @@ if [ ! -s ${local_dir_config} ]; then
     fi
 fi
 
-storage_options=$(csvsql --query "SELECT Actual_Path, Type FROM local_dir_config WHERE Avail_KB > 0 GROUP BY Type" ${local_dir_config})
+SIZE_37G_IN_KB=1000
+set -x
+storage_options=$(csvsql --query "\
+                    SELECT Actual_Path, Type \
+                    FROM local_dir_config \
+                    WHERE Avail_KB > ${SIZE_37G_IN_KB} \
+                        AND Actual_Path NOT LIKE '%people/${USER}%'
+                    GROUP BY Type" \
+                    ${local_dir_config})
+set +x
+
+
 storage_roots=$(echo "${storage_options}" | tail -n +2)
 for root_path in ${storage_roots}; do
     echo "root_path: ${root_path}"

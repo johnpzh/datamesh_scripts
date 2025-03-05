@@ -1,3 +1,6 @@
+# IDE
+.vscode
+
 # Data
 1kgenome_sbatch_deception/
 
@@ -5,3 +8,6 @@
 *.csv
 *.err
 *.out
+
+# Misc
+.DS_Store

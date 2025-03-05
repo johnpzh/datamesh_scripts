@@ -1,0 +1,5 @@
+#sbatch sbatch/marianas_2Nodes_allStorages_1kgenome_parallel_6000.v1.storage_path.sbatch
+sbatch sbatch/marianas_5Nodes_allStorages_1kgenome_parallel_6000.v1.storage_path.sbatch
+sbatch sbatch/marianas_10Nodes_allStorages_1kgenome_parallel_6000.v1.storage_path.sbatch
+sbatch sbatch/marianas_20Nodes_allStorages_1kgenome_parallel_6000.v1.storage_path.sbatch
+#sbatch sbatch/marianas_30Nodes_allStorages_1kgenome_parallel_6000.v1.storage_path.sbatch

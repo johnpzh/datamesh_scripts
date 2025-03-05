@@ -8,6 +8,13 @@ echo "ORIGIN_1KGENOME_DIR: ${ORIGIN_1KGENOME_DIR} SIZE_37G_IN_BYTES: ${SIZE_37G_
 echo
 
 is_ready=1
+
+if [ ! "${root_type}" = "beegfs" ] && [ ! "${root_type}" = "nfs" ]; then
+    # If the storage type is local, we need to measure the data movement cost
+    rm -rf "${CURRENT_DIR}"
+    is_ready=0
+fi
+
 if [ ! -d ${CURRENT_DIR} ]; then
     is_ready=0
     echo

@@ -8,6 +8,10 @@
 *.csv
 *.err
 *.out
+*.log
+
+# Figures
+*.png
 
 # Misc
 .DS_Store

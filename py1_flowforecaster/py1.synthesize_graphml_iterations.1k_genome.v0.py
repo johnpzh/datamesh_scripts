@@ -10,16 +10,8 @@ from pprint import pprint
 import pandas as pd
 from sortedcontainers import SortedSet
 
-
-def check_is_data(node: str, attr: dict):
-    if "abspath" in attr:
-        return True
-
-    ext = os.path.splitext(node)[1]
-    if ext in [".vcf", ".gz", ".txt"]:
-        return True
-
-    return False
+sys.path.append("../utils")
+from py_lib import check_is_data
 
 
 def rename_task(old_name: str, taskid_dict: dict):
@@ -61,9 +53,13 @@ def rename_file_plus_one(old_name: str, fileid_dict: dict):
     return new_name
 
 
-def get_roots(G):
-    roots = [node for node in G.nodes if G.in_degree(node) == 0]
-    return roots
+def get_root_tasks(G):
+    root_files = [node for node in G.nodes if G.in_degree(node) == 0]
+    root_tasks = set()
+    for file in root_files:
+        for task in G.successors(file):
+            root_tasks.add(task)
+    return list(root_tasks)
 
 
 def get_leafs(G):
@@ -83,14 +79,13 @@ def get_new_leafs(origin_leafs: list, map_nodes_old_to_new: dict):
 
 def get_bridge_edges(src_list: list, end_list: list):
     """
-    Each src has at least one bridge edge incident to it. So does each end.
+    In round-robin order, each src connects to each end
     """
     src_length = len(src_list)
-    src_indices = range(src_length)
     end_length = len(end_list)
-    end_indices = [i % end_length for i in np.random.permutation(src_indices)]
-
-    bridge_edges = [(src_list[s_i], end_list[e_i], {'weight': 0}) for s_i, e_i in zip(src_indices, end_indices)]
+    max_length = max(src_length, end_length)
+    bridge_edges = [(src_list[ind % src_length], end_list[ind % end_length], {'weight': 0})
+                    for ind in range(max_length)]
     return bridge_edges
 
 
@@ -110,7 +105,9 @@ def synthesize(filename: str, iterations: int):
         return
     G = nx.read_graphml(filename)
 
-    # Determine vertex type
+    """
+    Determine vertex type
+    """
     new_attr_set = {}
     for node, attr in G.nodes(data=True):
         # print(f"node: {node} attr: {attr}")
@@ -127,7 +124,9 @@ def synthesize(filename: str, iterations: int):
     #         print(node)
     # # end test
 
-    # Rename Task IDs
+    """
+    Rename Task IDs
+    """
     taskid_dict = {}
     fileid_dict = {}
     node_mapping = {}
@@ -145,20 +144,26 @@ def synthesize(filename: str, iterations: int):
     print(f"num_nodes: {G.number_of_nodes()} num_edges: {G.number_of_edges()}")
     # end test
 
-    # Get roots and leafs
-    origin_roots = get_roots(G)
+    """
+    Get roots and leafs
+    """
+    # origin_roots = get_roots(G)
+    oritin_root_tasks = get_root_tasks(G)
     origin_leafs = get_leafs(G)
     old_leafs = copy.deepcopy(origin_leafs)
 
+    """
+    Synthesize the new Graph
+    """
     new_G = nx.DiGraph(G)
-    print(f"\n154 num_nodes: {new_G.number_of_nodes()} num_edges: {new_G.number_of_edges()}")
     for iteration in range(iterations - 1):
-        # Get leaf nodes
-
         # Create new nodes
         map_nodes_old_to_new = {}
         new_nodes_list = []
         for node, attr in G.nodes(data=True):
+            if G.in_degree(node) == 0:
+                # Skip the first level of files
+                continue
             if attr['ntype'] == 'file':
                 new_name = rename_file_plus_one(node, fileid_dict)
             else:
@@ -169,36 +174,38 @@ def synthesize(filename: str, iterations: int):
         # Create new edges
         new_edges_list = []
         for src, end, attr in G.edges(data=True):
+            if G.in_degree(src) == 0:
+                # Skip the first level of files
+                continue
             new_src = map_nodes_old_to_new[src]
             new_end = map_nodes_old_to_new[end]
             new_edges_list.append((new_src, new_end, attr))
 
         # Add new nodes and edges
-        # test
-        print("\nnew_nodes_list")
-        pprint(new_nodes_list)
-        # end test
+        # # test
+        # print("\nnew_nodes_list")
+        # pprint(new_nodes_list)
+        # # end test
         new_G.add_nodes_from(new_nodes_list)
         new_G.add_edges_from(new_edges_list)
-        print(f"\n183 num_nodes: {new_G.number_of_nodes()} num_edges: {new_G.number_of_edges()}")
+        # print(f"\n183 num_nodes: {new_G.number_of_nodes()} num_edges: {new_G.number_of_edges()}")
 
-
-    # Connect old leaf nodes to tmp_G's sources
-        new_roots = get_new_roots(origin_roots, map_nodes_old_to_new)
+        # Connect old leaf nodes to new roots
+        new_root_tasks = get_new_roots(oritin_root_tasks, map_nodes_old_to_new)
         new_leafs = get_new_leafs(origin_leafs, map_nodes_old_to_new)
-        bridge_edges = get_bridge_edges(src_list=old_leafs, end_list=new_roots) # old_leafs -> new_roots
+        bridge_edges = get_bridge_edges(src_list=old_leafs, end_list=new_root_tasks) # old_leafs -> new_roots
         new_G.add_edges_from(bridge_edges)
-        # test
-        print("\nnew_roots")
-        pprint(new_roots)
-        print("\nnew_leafs")
-        pprint(new_leafs)
-        print("\nbridge_edges")
-        pprint(bridge_edges)
-        # end test
+        # # test
+        # print("\nnew_roots")
+        # pprint(new_roots)
+        # print("\nnew_leafs")
+        # pprint(new_leafs)
+        # print("\nbridge_edges")
+        # pprint(bridge_edges)
+        # # end test
         old_leafs = new_leafs
 
-        print(f"\ni:{iteration} num_nodes: {new_G.number_of_nodes()} num_edges: {new_G.number_of_edges()}")
+        # print(f"\ni:{iteration} num_nodes: {new_G.number_of_nodes()} num_edges: {new_G.number_of_edges()}")
 
     print(f"\nNew graph:")
     pprint(list(new_G.nodes))
@@ -208,8 +215,6 @@ def synthesize(filename: str, iterations: int):
     basename = os.path.splitext(os.path.basename(filename))[0]
     new_filename = basename + ".iter-" + str(iterations) + ".graphml"
     nx.write_graphml(new_G, new_filename)
-
-
 
 
 if __name__ == "__main__":

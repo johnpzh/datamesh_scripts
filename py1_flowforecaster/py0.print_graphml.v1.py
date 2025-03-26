@@ -9,16 +9,9 @@ from pprint import pprint
 import pandas as pd
 from sortedcontainers import SortedSet
 
+sys.path.append("../utils")
+from py_lib import check_is_data
 
-def check_is_data(node: str, attr: dict):
-    if "abspath" in attr:
-        return True
-
-    ext = os.path.splitext(node)[1]
-    if ext in [".vcf", ".gz", ".txt", ".h5", ".dcd", ".pt", ".pdb", ".json"]:
-        return True
-
-    return False
 
 
 def print_graphml(filename: str):

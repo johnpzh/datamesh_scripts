@@ -1,6 +1,9 @@
 # IDE
-/.vscode
-/.idea
+.vscode
+.idea
+
+# Python
+__pycache__
 
 # Data
 1kgenome_sbatch_deception/

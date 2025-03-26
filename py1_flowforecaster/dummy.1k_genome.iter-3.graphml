@@ -72,9 +72,6 @@
     <node id="chr1-EAS.txt-freq.tar_fileid0.gz">
       <data key="d0">file</data>
     </node>
-    <node id="ALL.chr1.250000_fileid1.vcf">
-      <data key="d0">file</data>
-    </node>
     <node id="individuals_taskid4">
       <data key="d0">task</data>
     </node>
@@ -104,10 +101,6 @@
     </node>
     <node id="chr1n.tar_fileid1.gz">
       <data key="d1">./chr1n.tar.gz</data>
-      <data key="d0">file</data>
-    </node>
-    <node id="ALL.chr1.annotation_fileid1.vcf">
-      <data key="d1">/qfs/projects/oddite/leeh736/git/1000genome-workflow/one_chr/data/20130502/ALL.chr1.annotation.vcf</data>
       <data key="d0">file</data>
     </node>
     <node id="sifting_taskid1">
@@ -140,9 +133,6 @@
     <node id="chr1-EAS.txt-freq.tar_fileid1.gz">
       <data key="d0">file</data>
     </node>
-    <node id="ALL.chr1.250000_fileid2.vcf">
-      <data key="d0">file</data>
-    </node>
     <node id="individuals_taskid8">
       <data key="d0">task</data>
     </node>
@@ -172,10 +162,6 @@
     </node>
     <node id="chr1n.tar_fileid2.gz">
       <data key="d1">./chr1n.tar.gz</data>
-      <data key="d0">file</data>
-    </node>
-    <node id="ALL.chr1.annotation_fileid2.vcf">
-      <data key="d1">/qfs/projects/oddite/leeh736/git/1000genome-workflow/one_chr/data/20130502/ALL.chr1.annotation.vcf</data>
       <data key="d0">file</data>
     </node>
     <node id="sifting_taskid2">
@@ -289,29 +275,20 @@
     <edge source="frequency_taskid1" target="chr1-EAS.txt-freq.tar_fileid0.gz">
       <data key="d2">121</data>
     </edge>
-    <edge source="chr1-AMR.txt.tar_fileid0.gz" target="ALL.chr1.250000_fileid1.vcf">
+    <edge source="chr1-AMR.txt.tar_fileid0.gz" target="individuals_taskid5">
       <data key="d2">0</data>
     </edge>
-    <edge source="chr1-EAS.txt.tar_fileid0.gz" target="ALL.chr1.annotation_fileid1.vcf">
+    <edge source="chr1-AMR.txt.tar_fileid0.gz" target="individuals_taskid4">
       <data key="d2">0</data>
     </edge>
-    <edge source="chr1-AMR.txt-freq.tar_fileid0.gz" target="ALL.chr1.annotation_fileid1.vcf">
+    <edge source="chr1-EAS.txt.tar_fileid0.gz" target="individuals_taskid7">
       <data key="d2">0</data>
     </edge>
-    <edge source="chr1-EAS.txt-freq.tar_fileid0.gz" target="ALL.chr1.250000_fileid1.vcf">
+    <edge source="chr1-AMR.txt-freq.tar_fileid0.gz" target="sifting_taskid1">
       <data key="d2">0</data>
     </edge>
-    <edge source="ALL.chr1.250000_fileid1.vcf" target="individuals_taskid4">
-      <data key="d2">2843432</data>
-    </edge>
-    <edge source="ALL.chr1.250000_fileid1.vcf" target="individuals_taskid5">
-      <data key="d2">2844321</data>
-    </edge>
-    <edge source="ALL.chr1.250000_fileid1.vcf" target="individuals_taskid6">
-      <data key="d2">2845432</data>
-    </edge>
-    <edge source="ALL.chr1.250000_fileid1.vcf" target="individuals_taskid7">
-      <data key="d2">2847512</data>
+    <edge source="chr1-EAS.txt-freq.tar_fileid0.gz" target="individuals_taskid6">
+      <data key="d2">0</data>
     </edge>
     <edge source="individuals_taskid4" target="chr1n-2-3.tar_fileid1.gz">
       <data key="d2">123</data>
@@ -352,9 +329,6 @@
     <edge source="chr1n.tar_fileid1.gz" target="frequency_taskid3">
       <data key="d2">4321</data>
     </edge>
-    <edge source="ALL.chr1.annotation_fileid1.vcf" target="sifting_taskid1">
-      <data key="d2">2345</data>
-    </edge>
     <edge source="sifting_taskid1" target="sifted.SIFT.chr1_fileid1.txt">
       <data key="d2">2345</data>
     </edge>
@@ -382,29 +356,20 @@
     <edge source="frequency_taskid3" target="chr1-EAS.txt-freq.tar_fileid1.gz">
       <data key="d2">121</data>
     </edge>
-    <edge source="chr1-AMR.txt.tar_fileid1.gz" target="ALL.chr1.250000_fileid2.vcf">
+    <edge source="chr1-AMR.txt.tar_fileid1.gz" target="individuals_taskid9">
       <data key="d2">0</data>
     </edge>
-    <edge source="chr1-EAS.txt.tar_fileid1.gz" target="ALL.chr1.annotation_fileid2.vcf">
+    <edge source="chr1-AMR.txt.tar_fileid1.gz" target="individuals_taskid8">
       <data key="d2">0</data>
     </edge>
-    <edge source="chr1-AMR.txt-freq.tar_fileid1.gz" target="ALL.chr1.250000_fileid2.vcf">
+    <edge source="chr1-EAS.txt.tar_fileid1.gz" target="individuals_taskid11">
       <data key="d2">0</data>
     </edge>
-    <edge source="chr1-EAS.txt-freq.tar_fileid1.gz" target="ALL.chr1.annotation_fileid2.vcf">
+    <edge source="chr1-AMR.txt-freq.tar_fileid1.gz" target="sifting_taskid2">
       <data key="d2">0</data>
     </edge>
-    <edge source="ALL.chr1.250000_fileid2.vcf" target="individuals_taskid8">
-      <data key="d2">2843432</data>
-    </edge>
-    <edge source="ALL.chr1.250000_fileid2.vcf" target="individuals_taskid9">
-      <data key="d2">2844321</data>
-    </edge>
-    <edge source="ALL.chr1.250000_fileid2.vcf" target="individuals_taskid10">
-      <data key="d2">2845432</data>
-    </edge>
-    <edge source="ALL.chr1.250000_fileid2.vcf" target="individuals_taskid11">
-      <data key="d2">2847512</data>
+    <edge source="chr1-EAS.txt-freq.tar_fileid1.gz" target="individuals_taskid10">
+      <data key="d2">0</data>
     </edge>
     <edge source="individuals_taskid8" target="chr1n-2-3.tar_fileid2.gz">
       <data key="d2">123</data>
@@ -444,9 +409,6 @@
     </edge>
     <edge source="chr1n.tar_fileid2.gz" target="frequency_taskid5">
       <data key="d2">4321</data>
-    </edge>
-    <edge source="ALL.chr1.annotation_fileid2.vcf" target="sifting_taskid2">
-      <data key="d2">2345</data>
     </edge>
     <edge source="sifting_taskid2" target="sifted.SIFT.chr1_fileid2.txt">
       <data key="d2">2345</data>

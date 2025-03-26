@@ -1,5 +1,6 @@
 # IDE
-.vscode
+/.vscode
+/.idea
 
 # Data
 1kgenome_sbatch_deception/

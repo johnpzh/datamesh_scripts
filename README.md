@@ -12,7 +12,7 @@ This will set up submodules [datalife](https://github.com/pnnl/datalife) and [li
 
 ## Install Dependent Python Library
 ```bash
-$ pip install numpy csvkit
+$ pip install numpy csvkit networkx matplotlib pandas sortedcontainers
 ```
 
 ## Run 1000Genome Workflow Using SLURM

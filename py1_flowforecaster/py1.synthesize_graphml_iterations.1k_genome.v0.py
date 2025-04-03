@@ -11,7 +11,9 @@ import pandas as pd
 from sortedcontainers import SortedSet
 
 sys.path.append("../utils")
-from py_lib import check_is_data
+from py_lib_flowforecaster import EdgeType, VertexType
+from py_lib_flowforecaster import check_is_data
+
 
 
 def rename_task(old_name: str, taskid_dict: dict):
@@ -100,8 +102,8 @@ def synthesize(filename: str, iterations: int):
     """
     print(f"graphml_file: {filename}")
     print(f"iterations: {iterations}")
-    if iterations < 2:
-        print(f"Only {iterations} iterations. Return.")
+    if iterations < 1:
+        print(f"Expect at least 1 iteration. Now is {iterations}. Return.")
         return
     G = nx.read_graphml(filename)
 
@@ -112,17 +114,13 @@ def synthesize(filename: str, iterations: int):
     for node, attr in G.nodes(data=True):
         # print(f"node: {node} attr: {attr}")
         if check_is_data(node, attr):
-            attr['ntype'] = 'file'
-            new_attr_set[node] = attr
+            attr["type"] = VertexType.FILE
+            attr["size"] = np.random.randint(low=1, high=10)
         else:
-            attr['ntype'] = 'task'
+            attr["type"] = VertexType.TASK
+        del attr['ntype']
+        new_attr_set[node] = attr
     nx.set_node_attributes(G, values=new_attr_set)
-
-    # # test
-    # for node, attr in G.nodes(data=True):
-    #     if attr['ntype'] == 'task':
-    #         print(node)
-    # # end test
 
     """
     Rename Task IDs
@@ -131,7 +129,7 @@ def synthesize(filename: str, iterations: int):
     fileid_dict = {}
     node_mapping = {}
     for node, attr in G.nodes(data=True):
-        if attr['ntype'] == 'file':
+        if attr["type"] == VertexType.FILE:
             new_name = rename_file(node, fileid_dict)
             node_mapping[node] = new_name
         else:
@@ -164,7 +162,7 @@ def synthesize(filename: str, iterations: int):
             if G.in_degree(node) == 0:
                 # Skip the first level of files
                 continue
-            if attr['ntype'] == 'file':
+            if attr["type"] == VertexType.FILE:
                 new_name = rename_file_plus_one(node, fileid_dict)
             else:
                 new_name = rename_task_plus_one(node, taskid_dict)

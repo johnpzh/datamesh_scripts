@@ -1,17 +1,17 @@
 <?xml version='1.0' encoding='utf-8'?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd">
-  <key id="d7" for="edge" attr.name="access_size" attr.type="float" />
-  <key id="d6" for="edge" attr.name="data_volume" attr.type="float" />
-  <key id="d5" for="edge" attr.name="num_destinations" attr.type="long" />
-  <key id="d4" for="edge" attr.name="num_sources" attr.type="long" />
+  <key id="d7" for="edge" attr.name="access_size" attr.type="string" />
+  <key id="d6" for="edge" attr.name="data_volume" attr.type="string" />
+  <key id="d5" for="edge" attr.name="num_destinations" attr.type="string" />
+  <key id="d4" for="edge" attr.name="num_sources" attr.type="string" />
   <key id="d3" for="edge" attr.name="type" attr.type="string" />
-  <key id="d2" for="node" attr.name="layer" attr.type="long" />
-  <key id="d1" for="node" attr.name="size" attr.type="float" />
+  <key id="d2" for="node" attr.name="layer" attr.type="string" />
+  <key id="d1" for="node" attr.name="size" attr.type="string" />
   <key id="d0" for="node" attr.name="type" attr.type="string" />
   <graph edgedefault="directed">
     <node id="ALL.chr1.250000.vcf">
       <data key="d0">file</data>
-      <data key="d1">3.0</data>
+      <data key="d1">[6.0,2.0,9.0]</data>
       <data key="d2">0</data>
     </node>
     <node id="individuals">
@@ -20,7 +20,7 @@
     </node>
     <node id="ALL.chr1.annotation.vcf">
       <data key="d0">file</data>
-      <data key="d1">7.0</data>
+      <data key="d1">[9.0,7.0,8.0]</data>
       <data key="d2">0</data>
     </node>
     <node id="sifting">
@@ -29,12 +29,12 @@
     </node>
     <node id="chr1n-.tar.gz">
       <data key="d0">file</data>
-      <data key="d1">5.0</data>
+      <data key="d1">[7.5,5.0,3.0]</data>
       <data key="d2">2</data>
     </node>
     <node id="sifted.SIFT.chr1.txt">
       <data key="d0">file</data>
-      <data key="d1">8.0</data>
+      <data key="d1">[2.0,8.0,2.0]</data>
       <data key="d2">2</data>
     </node>
     <node id="individuals_merge">
@@ -43,7 +43,7 @@
     </node>
     <node id="chr1n.tar.gz">
       <data key="d0">file</data>
-      <data key="d1">7.0</data>
+      <data key="d1">[9.0,4.0,3.0]</data>
       <data key="d2">4</data>
     </node>
     <node id="mutation_overlap">
@@ -56,97 +56,97 @@
     </node>
     <node id="chr1-.txt.tar.gz">
       <data key="d0">file</data>
-      <data key="d1">6.5</data>
+      <data key="d1">[8.0,2.0,4.5]</data>
       <data key="d2">6</data>
     </node>
     <node id="chr1-.txt-freq.tar.gz">
       <data key="d0">file</data>
-      <data key="d1">2.5</data>
+      <data key="d1">[5.5,7.5,2.5]</data>
       <data key="d2">6</data>
     </node>
     <edge source="ALL.chr1.250000.vcf" target="individuals">
       <data key="d3">fan-out</data>
       <data key="d4">1</data>
-      <data key="d5">4</data>
-      <data key="d6">576.5</data>
-      <data key="d7">3.75</data>
+      <data key="d5">[4,4,4]</data>
+      <data key="d6">[449.25,351.5,784.0]</data>
+      <data key="d7">[4.5,6.75,4.5]</data>
     </edge>
     <edge source="individuals" target="chr1n-.tar.gz">
       <data key="d3">sequential</data>
       <data key="d4">1</data>
       <data key="d5">1</data>
-      <data key="d6">609.5</data>
-      <data key="d7">6.0</data>
+      <data key="d6">[628.25,482.5,409.75]</data>
+      <data key="d7">[5.0,5.0,4.0]</data>
     </edge>
     <edge source="ALL.chr1.annotation.vcf" target="sifting">
       <data key="d3">sequential</data>
       <data key="d4">1</data>
       <data key="d5">1</data>
-      <data key="d6">605.0</data>
-      <data key="d7">6.0</data>
+      <data key="d6">[802.0,353.0,734.0]</data>
+      <data key="d7">[1.0,7.0,6.0]</data>
     </edge>
     <edge source="sifting" target="sifted.SIFT.chr1.txt">
       <data key="d3">sequential</data>
       <data key="d4">1</data>
       <data key="d5">1</data>
-      <data key="d6">457.0</data>
-      <data key="d7">3.0</data>
+      <data key="d6">[16.0,715.0,309.0]</data>
+      <data key="d7">[8.0,3.0,6.0]</data>
     </edge>
     <edge source="chr1n-.tar.gz" target="individuals_merge">
       <data key="d3">fan-in</data>
-      <data key="d4">4</data>
+      <data key="d4">[4,4,4]</data>
       <data key="d5">1</data>
-      <data key="d6">471.25</data>
-      <data key="d7">5.25</data>
+      <data key="d6">[242.0,645.25,394.0]</data>
+      <data key="d7">[3.25,4.25,4.5]</data>
     </edge>
     <edge source="sifted.SIFT.chr1.txt" target="mutation_overlap">
       <data key="d3">fan-out</data>
       <data key="d4">1</data>
-      <data key="d5">2</data>
-      <data key="d6">463.0</data>
-      <data key="d7">5.0</data>
+      <data key="d5">[2,2,2]</data>
+      <data key="d6">[700.5,330.0,573.0]</data>
+      <data key="d7">[3.5,2.5,4.0]</data>
     </edge>
     <edge source="sifted.SIFT.chr1.txt" target="frequency">
       <data key="d3">fan-out</data>
       <data key="d4">1</data>
-      <data key="d5">2</data>
-      <data key="d6">569.5</data>
-      <data key="d7">3.5</data>
+      <data key="d5">[2,2,2]</data>
+      <data key="d6">[513.5,434.0,132.0]</data>
+      <data key="d7">[3.0,3.0,4.5]</data>
     </edge>
     <edge source="individuals_merge" target="chr1n.tar.gz">
       <data key="d3">sequential</data>
       <data key="d4">1</data>
       <data key="d5">1</data>
-      <data key="d6">829.0</data>
-      <data key="d7">3.0</data>
+      <data key="d6">[841.0,169.0,543.0]</data>
+      <data key="d7">[6.0,6.0,2.0]</data>
     </edge>
     <edge source="chr1n.tar.gz" target="mutation_overlap">
       <data key="d3">fan-out</data>
       <data key="d4">1</data>
-      <data key="d5">2</data>
-      <data key="d6">175.5</data>
-      <data key="d7">4.5</data>
+      <data key="d5">[2,2,2]</data>
+      <data key="d6">[820.5,327.5,559.0]</data>
+      <data key="d7">[5.5,4.5,2.0]</data>
     </edge>
     <edge source="chr1n.tar.gz" target="frequency">
       <data key="d3">fan-out</data>
       <data key="d4">1</data>
-      <data key="d5">2</data>
-      <data key="d6">736.0</data>
-      <data key="d7">6.5</data>
+      <data key="d5">[2,2,2]</data>
+      <data key="d6">[319.5,628.5,625.5]</data>
+      <data key="d7">[6.0,7.5,4.5]</data>
     </edge>
     <edge source="mutation_overlap" target="chr1-.txt.tar.gz">
       <data key="d3">sequential</data>
       <data key="d4">1</data>
       <data key="d5">1</data>
-      <data key="d6">654.5</data>
-      <data key="d7">3.0</data>
+      <data key="d6">[749.5,501.5,487.0]</data>
+      <data key="d7">[5.0,6.5,5.5]</data>
     </edge>
     <edge source="frequency" target="chr1-.txt-freq.tar.gz">
       <data key="d3">sequential</data>
       <data key="d4">1</data>
       <data key="d5">1</data>
-      <data key="d6">576.5</data>
-      <data key="d7">5.5</data>
+      <data key="d6">[542.0,670.5,474.0]</data>
+      <data key="d7">[7.5,5.0,6.0]</data>
     </edge>
   </graph>
 </graphml>

@@ -12,7 +12,8 @@ from sortedcontainers import SortedSet
 
 sys.path.append("../utils")
 from py_lib_flowforecaster import EdgeType, VertexType
-from py_lib_flowforecaster import check_is_data
+from py_lib_flowforecaster import EdgeAttrType, VertexAttrType
+from py_lib_flowforecaster import check_is_data, show_dag
 
 
 
@@ -55,6 +56,11 @@ def rename_file_plus_one(old_name: str, fileid_dict: dict):
     return new_name
 
 
+def get_root_files(G):
+    root_files = [node for node in G.nodes if G.in_degree(node) == 0]
+    return root_files
+
+
 def get_root_tasks(G):
     root_files = [node for node in G.nodes if G.in_degree(node) == 0]
     root_tasks = set()
@@ -79,16 +85,56 @@ def get_new_leafs(origin_leafs: list, map_nodes_old_to_new: dict):
     return new_leafs
 
 
-def get_bridge_edges(src_list: list, end_list: list):
+def generate_edge_attr_random():
+    data_volume = np.random.randint(low=1, high=1000)
+    access_size = np.random.randint(low=1, high=10)
+    attr = {
+        EdgeAttrType.DATA_VOL: data_volume,
+        EdgeAttrType.ACC_SIZE: access_size,
+    }
+    return attr
+
+
+# def get_bridge_edges(src_list: list, end_list: list):
+#     """
+#     In round-robin order, each src connects to each end
+#     """
+#     src_length = len(src_list)
+#     end_length = len(end_list)
+#     max_length = max(src_length, end_length)
+#     bridge_edges = [(src_list[ind % src_length], end_list[ind % end_length], {'weight': 0})
+#                     for ind in range(max_length)]
+#     return bridge_edges
+def create_bridge_edges(src_list: list, dst_list: list, G: nx.DiGraph, taskid_dict: dict):
+    """"""
     """
-    In round-robin order, each src connects to each end
+    Add the dummy task vertex
     """
-    src_length = len(src_list)
-    end_length = len(end_list)
-    max_length = max(src_length, end_length)
-    bridge_edges = [(src_list[ind % src_length], end_list[ind % end_length], {'weight': 0})
-                    for ind in range(max_length)]
-    return bridge_edges
+    basename = "dummy_task"
+    if basename in taskid_dict:
+        taskid_dict[basename] += 1
+    else:
+        taskid_dict[basename] = 0
+    taskid = taskid_dict[basename]
+    task_name = basename + "_taskid" + str(taskid)
+    task_attr = {
+        VertexAttrType.TYPE: VertexType.TASK
+    }
+    G.add_node(task_name, **task_attr)
+
+    """
+    Add edges from src_list to the dummy task
+    """
+    for src in src_list:
+        edge_attr = generate_edge_attr_random()
+        G.add_edge(src, task_name, **edge_attr)
+
+    """
+    Add edges from the dummy task to end_list
+    """
+    for dst in dst_list:
+        edge_attr = generate_edge_attr_random()
+        G.add_edge(task_name, dst, **edge_attr)
 
 
 def synthesize(filename: str, iterations: int):
@@ -110,17 +156,20 @@ def synthesize(filename: str, iterations: int):
     """
     Determine vertex type
     """
-    new_attr_set = {}
+    node_attr_map = {}
     for node, attr in G.nodes(data=True):
         # print(f"node: {node} attr: {attr}")
         if check_is_data(node, attr):
-            attr["type"] = VertexType.FILE
-            attr["size"] = np.random.randint(low=1, high=10)
+            attr[VertexAttrType.TYPE] = VertexType.FILE
+            attr[VertexAttrType.SIZE] = np.random.randint(low=1, high=10)
         else:
-            attr["type"] = VertexType.TASK
-        del attr['ntype']
-        new_attr_set[node] = attr
-    nx.set_node_attributes(G, values=new_attr_set)
+            attr[VertexAttrType.TYPE] = VertexType.TASK
+        if 'ntype' in attr:
+            del attr['ntype']
+        if 'abspath' in attr:
+            del attr['abspath']
+        node_attr_map[node] = attr
+    nx.set_node_attributes(G, values=node_attr_map)
 
     """
     Rename Task IDs
@@ -129,13 +178,24 @@ def synthesize(filename: str, iterations: int):
     fileid_dict = {}
     node_mapping = {}
     for node, attr in G.nodes(data=True):
-        if attr["type"] == VertexType.FILE:
+        if attr[VertexAttrType.TYPE] == VertexType.FILE:
             new_name = rename_file(node, fileid_dict)
             node_mapping[node] = new_name
         else:
             new_name = rename_task(node, taskid_dict)
             node_mapping[node] = new_name
     nx.relabel_nodes(G, mapping=node_mapping, copy=False)
+
+    """
+    Add Edge Attributes
+    """
+    edge_attr_map = {}
+    for src, dst, attr in G.edges(data=True):
+        if "weight" in attr:
+            del attr["weight"]
+        edge_attr_map[(src, dst)] = generate_edge_attr_random()
+    nx.set_edge_attributes(G, values=edge_attr_map)
+
     # test
     print("\nRenamed graph:")
     pprint(list(G.nodes))
@@ -145,8 +205,8 @@ def synthesize(filename: str, iterations: int):
     """
     Get roots and leafs
     """
-    # origin_roots = get_roots(G)
-    oritin_root_tasks = get_root_tasks(G)
+    origin_roots_files = get_root_files(G)
+    # oritin_root_tasks = get_root_tasks(G)
     origin_leafs = get_leafs(G)
     old_leafs = copy.deepcopy(origin_leafs)
 
@@ -159,11 +219,12 @@ def synthesize(filename: str, iterations: int):
         map_nodes_old_to_new = {}
         new_nodes_list = []
         for node, attr in G.nodes(data=True):
-            if G.in_degree(node) == 0:
-                # Skip the first level of files
-                continue
-            if attr["type"] == VertexType.FILE:
+            # if G.in_degree(node) == 0:
+            #     # Skip the first level of files
+            #     continue
+            if attr[VertexAttrType.TYPE] == VertexType.FILE:
                 new_name = rename_file_plus_one(node, fileid_dict)
+                attr[VertexAttrType.SIZE] = np.random.randint(low=1, high=10)
             else:
                 new_name = rename_task_plus_one(node, taskid_dict)
             new_nodes_list.append((new_name, attr))
@@ -172,12 +233,13 @@ def synthesize(filename: str, iterations: int):
         # Create new edges
         new_edges_list = []
         for src, end, attr in G.edges(data=True):
-            if G.in_degree(src) == 0:
-                # Skip the first level of files
-                continue
+            # if G.in_degree(src) == 0:
+            #     # Skip the first level of files
+            #     continue
             new_src = map_nodes_old_to_new[src]
             new_end = map_nodes_old_to_new[end]
-            new_edges_list.append((new_src, new_end, attr))
+            new_edge_attr = generate_edge_attr_random()
+            new_edges_list.append((new_src, new_end, new_edge_attr))
 
         # Add new nodes and edges
         # # test
@@ -189,10 +251,13 @@ def synthesize(filename: str, iterations: int):
         # print(f"\n183 num_nodes: {new_G.number_of_nodes()} num_edges: {new_G.number_of_edges()}")
 
         # Connect old leaf nodes to new roots
-        new_root_tasks = get_new_roots(oritin_root_tasks, map_nodes_old_to_new)
+        # new_root_tasks = get_new_roots(oritin_root_tasks, map_nodes_old_to_new)
+        new_root_files = get_new_roots(origin_roots_files, map_nodes_old_to_new)
         new_leafs = get_new_leafs(origin_leafs, map_nodes_old_to_new)
-        bridge_edges = get_bridge_edges(src_list=old_leafs, end_list=new_root_tasks) # old_leafs -> new_roots
-        new_G.add_edges_from(bridge_edges)
+        # bridge_edges = get_bridge_edges(src_list=old_leafs, end_list=new_root_files) # old_leafs -> new_roots
+        # new_G.add_edges_from(bridge_edges)
+        create_bridge_edges(src_list=old_leafs, dst_list=new_root_files,
+                            G=new_G, taskid_dict=taskid_dict) # old_leafs -> dummy_task -> new_roots
         # # test
         # print("\nnew_roots")
         # pprint(new_roots)

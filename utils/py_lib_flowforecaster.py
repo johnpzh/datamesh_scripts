@@ -11,10 +11,25 @@ class EdgeType:
     SEQ = "sequential"
 
 
+class EdgeAttrType:
+    TYPE = "type"
+    DATA_VOL = "data_volume"
+    ACC_SIZE = "access_size"
+    NUM_SRC = "num_sources"
+    NUM_DST = "num_destinations"
+    # NUM_TASKS = "num_tasks"
+    # NUM_FILES = "num_files"
+
+
 # class VertexType(str, Enum):
 class VertexType:
     FILE = "file"
     TASK = "task"
+
+
+class VertexAttrType:
+    TYPE = "type"
+    SIZE = "size"
 
 
 def check_is_data(node: str, attr: dict):

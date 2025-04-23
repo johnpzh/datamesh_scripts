@@ -14,6 +14,13 @@ __pycache__
 *.out
 *.log
 
+# DataLife files
+datalife_stats*/
+*_w_stat
+*_w_trace_stat
+*_r_stat
+*_r_trace_stat
+
 # Figures
 *.png
 

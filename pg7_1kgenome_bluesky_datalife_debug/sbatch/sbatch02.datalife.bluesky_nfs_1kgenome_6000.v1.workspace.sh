@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="debug_1kgenome_no-datalife"
+#SBATCH --job-name="ws_datalife_1kgenome"
 #SBATCH --partition=slurm
 ######SBATCH --exclude=dc[119,077]
 #SBATCH --account=datamesh
@@ -96,6 +96,7 @@ PREV_PWD=$(readlink -f .)
 DATASET_DIR_NAME="workspace.${SLURM_JOBID}.${SLURM_JOB_NAME}"
 DATALIFE_LIB_PATH="/qfs/projects/oddite/peng599/FlowForecaster/datalife/build/flow-monitor/src/libmonitor.so"
 
+# export DATALIFE_OUTPUT_PATH="${PREV_PWD}/datalife_stats.${SLURM_JOB_NAME}.${SLURM_JOBID}"
 export DATALIFE_OUTPUT_PATH="${PREV_PWD}/datalife_stats"
 export DATALIFE_FILE_PATTERNS="\
 *.fits, *.vcf, *.lht, *.fna, *.*.bt2, \
@@ -103,7 +104,7 @@ export DATALIFE_FILE_PATTERNS="\
 *.fasta.ann, *.fasta, *.stf, *.out, *.dot, \
 *.gz, *.tar.gz, *.dcd, *.pt, *.h5, \
 *.nc, SAS, EAS, GBR, AMR, \
-AFR, EUR, ALL, *.datalifetest \
+AFR, EUR, ALL, *.chr*.txt, *.datalifetest \
 "
 
 echo
@@ -114,8 +115,17 @@ echo
 echo "DATALIFE_OUTPUT_PATH: ${DATALIFE_OUTPUT_PATH}"
 echo
 
-rm -rf "${DATALIFE_OUTPUT_PATH}"
-mkdir -p "${DATALIFE_OUTPUT_PATH}"
+if [ ! -d "${DATALIFE_OUTPUT_PATH}" ]; then
+    mkdir -p "${DATALIFE_OUTPUT_PATH}"
+fi
+rm -rf "${DATALIFE_OUTPUT_PATH}/*"
+
+#####################
+# Launch the monitor
+#####################
+
+
+python py00.event_monitor.py "${DATALIFE_OUTPUT_PATH}" >> "R.${SLURM_JOB_NAME}.${SLURM_JOBID}.events.log" &
 
 ##############
 # Preparation
@@ -444,7 +454,13 @@ workflow_start_time=$SECONDS
 #
 # Run the workflow
 #
-cd "${CURRENT_DIR}"
+# cd "${CURRENT_DIR}"
+WORKSPACE_PWD="${PREV_PWD}/output_workspace"
+cd "${WORKSPACE_PWD}"
+
+echo
+echo "WORKSPACE_PWD: $(pwd)"
+echo
 
 
 ## Stage 1 : Individuals
@@ -455,10 +471,14 @@ echo "#########################"
 echo
 
 set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 1 201 6000 &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 201 401 6000 &
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 401 601 6000 &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 601 801 6000 &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 1 201 6000 &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 201 401 6000 &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 401 601 6000 &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 601 801 6000 &
 set +x
 wait
 
@@ -471,13 +491,14 @@ echo "###############################"
 echo
 
 set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals_merge.py 1 \
-    $CURRENT_DIR/chr1n-1-201.tar.gz \
-    $CURRENT_DIR/chr1n-201-401.tar.gz \
-    $CURRENT_DIR/chr1n-401-601.tar.gz \
-    $CURRENT_DIR/chr1n-601-801.tar.gz &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals_merge.py 1 \
+        "${WORKSPACE_PWD}"/chr1n-1-201.tar.gz \
+        "${WORKSPACE_PWD}"/chr1n-201-401.tar.gz \
+        "${WORKSPACE_PWD}"/chr1n-401-601.tar.gz \
+        "${WORKSPACE_PWD}"/chr1n-601-801.tar.gz &
 set +x
-wait
+
 
 echo
 echo "#####################"
@@ -486,7 +507,8 @@ echo "#####################"
 echo
 
 set -x
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/sifting.py $CURRENT_DIR/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf 1 &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/sifting.py $CURRENT_DIR/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf 1 &
 set +x
 wait
 
@@ -499,8 +521,10 @@ echo "##############################"
 echo
 
 set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c 1 -pop EAS &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c 1 -pop AMR &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c 1 -pop EAS &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c 1 -pop AMR &
 set +x
 wait
 
@@ -511,91 +535,13 @@ echo "#######################"
 echo
 
 set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c 1 -pop EAS &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c 1 -pop AMR &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c 1 -pop EAS &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c 1 -pop AMR &
 set +x
 wait
 
-
-# # start_time=$SECONDS
-# # STAGE_IN_INDIVIDUALS
-# # wait
-# # duration=$(($SECONDS - $start_time))
-# # echo "data stage-in for individuals : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-
-
-# # Stage 1 : Individuals
-# echo
-# echo "Start individuals CHROMOSOME on ${CURRENT_DIR}"
-# echo
-# start_time=$SECONDS
-# START_INDIVIDUALS
-# wait
-# duration=$(($SECONDS - $start_time))
-# echo "individuals : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# individuals_time_list+=(${duration})
-
-# # # Stage 2 : Individuals merge + Sifting
-# # start_time=$SECONDS
-# # echo "Start individuals_merge on ${CURRENT_DIR}"
-# # START_INDIVIDUALS_MERGE
-# # wait
-# # duration=$(($SECONDS - $start_time))
-# # echo "individuals_merge+sifting : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# # echo "Start Sifting on ${CURRENT_DIR}"
-# # start_time=$SECONDS
-# # START_SIFTING
-# # wait
-# # duration=$(($SECONDS - $start_time))
-# # echo "sifting : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-
-# # Stage 2 : Individuals merge + Sifting
-# start_time=$SECONDS
-# echo
-# echo "Start individuals_merge and sifting on ${CURRENT_DIR}"
-# echo 
-# START_INDIVIDUALS_MERGE
-# START_SIFTING
-# wait
-# duration=$(($SECONDS - $start_time))
-# echo "individuals_merge+sifting : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# merge_sifting_time_list+=(${duration})
-
-
-# # Stage 3 : Mutation overlap + Frequency
-# start_time=$SECONDS
-# echo
-# echo "Start mutation_overlap on ${CURRENT_DIR}"
-# echo
-# START_MUTATION_OVERLAP
-# wait
-# duration=$(($SECONDS - $start_time))
-# echo "mutation_overlap : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# mutation_overlap_time_list+=(${duration})
-
-# start_time=$SECONDS
-# echo
-# echo "Start frequency on ${CURRENT_DIR}"
-# echo
-# START_FREQUENCY
-# wait
-# duration=$(($SECONDS - $start_time))
-# echo "frequency : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# frequency_time_list+=(${duration})
-
-
-# duration=$(($SECONDS - $workflow_start_time))
-# echo "All_tasks_done : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# workflow_time_list+=(${duration})
-
-# # set -x
-# # check output
-# # echo "Checking all output ----------------"
-# # srun -n$NUM_NODES -w $host_list --exclusive du -h $CURRENT_DIR
-
-# duration=$(($SECONDS - $total_time_start))
-# echo "All_tasks+Prepare_data : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# total_time_list+=(${duration})
 
 # LOCAL_CLEANUP
 echo
@@ -614,61 +560,6 @@ sacct -j $SLURM_JOB_ID -o jobid,submit,start,end,state
 ###########################
 # Save performance numbers
 ###########################
-
-# # Save the times
-# collect_file="${PREV_PWD}/R.${SLURM_JOB_NAME}.${SLURM_JOBID}.all_times.csv"
-# :> ${collect_file}
-# echo "${col_header}" >> ${collect_file}
-
-# echo -n "individuals(s)" >> ${collect_file}
-# for time in "${individuals_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
-
-# echo -n "individuals_merge+sifting(s)" >> ${collect_file}
-# for time in "${merge_sifting_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
-
-# echo -n "mutation_overlap(s)" >> ${collect_file}
-# for time in "${mutation_overlap_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
-
-# echo -n "frequency(s)" >> ${collect_file}
-# for time in "${frequency_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
-
-# echo -n "all_tasks(s)" >> ${collect_file}
-# for time in "${workflow_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
-
-# echo -n "prepare_data(s)" >> ${collect_file}
-# for time in "${prepare_data_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
-
-# echo -n "all_tasks+prep_data(s)" >> ${collect_file}
-# for time in "${total_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
-
-# echo 
-# echo "Saved to ${collect_file}"
-# echo 
-
-# echo
-# csvlook ${collect_file}
-# echo
 
 
 TT_TIME_END=$(date +%s.%N)

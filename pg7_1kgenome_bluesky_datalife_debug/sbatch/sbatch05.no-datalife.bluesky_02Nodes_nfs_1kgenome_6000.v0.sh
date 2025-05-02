@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="debug_1kgenome_no-datalife"
+#SBATCH --job-name="full_1kgenome"
 #SBATCH --partition=slurm
 ######SBATCH --exclude=dc[119,077]
 #SBATCH --account=datamesh
@@ -87,35 +87,17 @@ NFS_ORIGIN_1KGENOME_DIR="/qfs/projects/oddite/peng599/1kgenome_qfs/1kgenome_sbat
 BEEGFS_ORIGIN_1KGENOME_DIR="/rcfs/projects/datamesh/peng599/1kgnome_rcfs/1kgenome_sbatch_deception"
 LINUX_RESOURCE_DETECT="/qfs/projects/oddite/peng599/1kgenome_qfs/linux_resource_detect/remote_data_transfer.sh"
 PREPARE_DATA_SH="/qfs/projects/oddite/peng599/1kgenome_qfs/utils/util01.prepare_data.v2.sh"
-REMOVE_LOCAL_DATA_SH="/qfs/projects/oddite/peng599/1kgenome_qfs/utils/util02.remove_local_data.v0.sh"
 # SIZE_37G_IN_BYTES=$(du -sb ${ORIGIN_1KGENOME_DIR} | grep -o -E '^[0-9]+([.][0-9]+)?')
 # SIZE_37G_IN_KB=$(du -s ${ORIGIN_1KGENOME_DIR} | grep -o -E '^[0-9]+([.][0-9]+)?')
 SIZE_37G_IN_BYTES=38089130668
 SIZE_37G_IN_KB=37346388
 PREV_PWD=$(readlink -f .)
 DATASET_DIR_NAME="workspace.${SLURM_JOBID}.${SLURM_JOB_NAME}"
-DATALIFE_LIB_PATH="/qfs/projects/oddite/peng599/FlowForecaster/datalife/build/flow-monitor/src/libmonitor.so"
 
-export DATALIFE_OUTPUT_PATH="${PREV_PWD}/datalife_stats"
-export DATALIFE_FILE_PATTERNS="\
-*.fits, *.vcf, *.lht, *.fna, *.*.bt2, \
-*.fastq, *.fasta.amb, *.fasta.sa, *.fasta.bwt, *.fasta.pac, \
-*.fasta.ann, *.fasta, *.stf, *.out, *.dot, \
-*.gz, *.tar.gz, *.dcd, *.pt, *.h5, \
-*.nc, SAS, EAS, GBR, AMR, \
-AFR, EUR, ALL, *.datalifetest \
-"
 
 echo
 echo "PREV_PWD: ${PREV_PWD}"
 echo
-
-echo
-echo "DATALIFE_OUTPUT_PATH: ${DATALIFE_OUTPUT_PATH}"
-echo
-
-rm -rf "${DATALIFE_OUTPUT_PATH}"
-mkdir -p "${DATALIFE_OUTPUT_PATH}"
 
 ##############
 # Preparation
@@ -179,7 +161,6 @@ function START_INDIVIDUALS() {
                 let ii=i+1
                 # No need to change. This is the smallest input allowed.
                 set -x
-                LD_PRELOAD=$DATALIFE_LIB_PATH \
                 srun -w $running_node -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr${ii}.250000.vcf $ii $((1+j*200)) $((201+j*200)) 6000 &
                 set +x
                 counter=$(($counter + 1))
@@ -200,7 +181,6 @@ function START_INDIVIDUALS_MERGE() {
         let ii=i+1
         # 10 merge tasks in total
         set -x
-        LD_PRELOAD=$DATALIFE_LIB_PATH \
         srun -w $running_node -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals_merge.py $ii $CURRENT_DIR/chr${ii}n-1-201.tar.gz $CURRENT_DIR/chr${ii}n-201-401.tar.gz $CURRENT_DIR/chr${ii}n-401-601.tar.gz $CURRENT_DIR/chr${ii}n-601-801.tar.gz $CURRENT_DIR/chr${ii}n-801-1001.tar.gz $CURRENT_DIR/chr${ii}n-1001-1201.tar.gz $CURRENT_DIR/chr${ii}n-1201-1401.tar.gz $CURRENT_DIR/chr${ii}n-1401-1601.tar.gz $CURRENT_DIR/chr${ii}n-1601-1801.tar.gz $CURRENT_DIR/chr${ii}n-1801-2001.tar.gz $CURRENT_DIR/chr${ii}n-2001-2201.tar.gz $CURRENT_DIR/chr${ii}n-2201-2401.tar.gz $CURRENT_DIR/chr${ii}n-2401-2601.tar.gz $CURRENT_DIR/chr${ii}n-2601-2801.tar.gz $CURRENT_DIR/chr${ii}n-2801-3001.tar.gz $CURRENT_DIR/chr${ii}n-3001-3201.tar.gz $CURRENT_DIR/chr${ii}n-3201-3401.tar.gz $CURRENT_DIR/chr${ii}n-3401-3601.tar.gz $CURRENT_DIR/chr${ii}n-3601-3801.tar.gz $CURRENT_DIR/chr${ii}n-3801-4001.tar.gz $CURRENT_DIR/chr${ii}n-4001-4201.tar.gz $CURRENT_DIR/chr${ii}n-4201-4401.tar.gz $CURRENT_DIR/chr${ii}n-4401-4601.tar.gz $CURRENT_DIR/chr${ii}n-4601-4801.tar.gz $CURRENT_DIR/chr${ii}n-4801-5001.tar.gz $CURRENT_DIR/chr${ii}n-5001-5201.tar.gz $CURRENT_DIR/chr${ii}n-5201-5401.tar.gz $CURRENT_DIR/chr${ii}n-5401-5601.tar.gz $CURRENT_DIR/chr${ii}n-5601-5801.tar.gz $CURRENT_DIR/chr${ii}n-5801-6001.tar.gz &
         set +x
     done
@@ -216,7 +196,6 @@ function START_SIFTING() {
         # 10 sifting tasks in total
         let ii=i+1
         set -x
-        LD_PRELOAD=$DATALIFE_LIB_PATH \
         srun -w $running_node -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/sifting.py $CURRENT_DIR/ALL.chr${ii}.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf $ii &
         set +x
     done
@@ -234,7 +213,6 @@ function START_MUTATION_OVERLAP() {
         do
             let ii=i+1
             set -x
-            LD_PRELOAD=$DATALIFE_LIB_PATH \
             srun -w $running_node -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c $ii -pop $j &
             set +x
         done
@@ -253,7 +231,6 @@ function START_FREQUENCY() {
         do
             let ii=i+1
             set -x
-            LD_PRELOAD=$DATALIFE_LIB_PATH \
             srun -w $running_node -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c $ii -pop $j &
             set +x
         done
@@ -383,11 +360,11 @@ TT_TIME_START=$(date +%s.%N)
 #     root_path=${tmp_opt[0]}
 #     root_type=${tmp_opt[1]}
 
-    # # DEBUG
-    # if [ ! ${root_type} = "nfs" ]; then
-    #     continue
-    # fi
-    # # End DEBUG
+#     # DEBUG
+#     if [ ! ${root_type} = "nfs" ]; then
+#         continue
+#     fi
+#     # End DEBUG
 
 # Storage Options
 
@@ -395,7 +372,6 @@ root_path="/qfs/projects/oddite/peng599"
 root_type="nfs"
 
 total_time_start=$SECONDS
-
 # Prepare the data
 
 CURRENT_DIR="${root_path}/${DATASET_DIR_NAME}"
@@ -447,161 +423,91 @@ workflow_start_time=$SECONDS
 cd "${CURRENT_DIR}"
 
 
-## Stage 1 : Individuals
-echo
-echo "#########################"
-echo "# Task : individuals.py #"
-echo "#########################"
-echo
-
-set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 1 201 6000 &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 201 401 6000 &
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 401 601 6000 &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 601 801 6000 &
-set +x
-wait
-
-## Stage 2 : Individuals merge + Sifting
-
-echo
-echo "###############################"
-echo "# Task : individuals_merge.py #"
-echo "###############################"
-echo
-
-set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals_merge.py 1 \
-    $CURRENT_DIR/chr1n-1-201.tar.gz \
-    $CURRENT_DIR/chr1n-201-401.tar.gz \
-    $CURRENT_DIR/chr1n-401-601.tar.gz \
-    $CURRENT_DIR/chr1n-601-801.tar.gz &
-set +x
-wait
-
-echo
-echo "#####################"
-echo "# Task : sifting.py #"
-echo "#####################"
-echo
-
-set -x
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/sifting.py $CURRENT_DIR/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf 1 &
-set +x
-wait
-
-## Stage 3 : Mutation overlap + Frequency
-
-echo
-echo "##############################"
-echo "# Task : mutation_overlap.py #"
-echo "##############################"
-echo
-
-set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c 1 -pop EAS &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c 1 -pop AMR &
-set +x
-wait
-
-echo
-echo "#######################"
-echo "# Task : frequency.py #"
-echo "#######################"
-echo
-
-set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c 1 -pop EAS &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c 1 -pop AMR &
-set +x
-wait
-
-
-# # start_time=$SECONDS
-# # STAGE_IN_INDIVIDUALS
-# # wait
-# # duration=$(($SECONDS - $start_time))
-# # echo "data stage-in for individuals : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-
-
-# # Stage 1 : Individuals
-# echo
-# echo "Start individuals CHROMOSOME on ${CURRENT_DIR}"
-# echo
 # start_time=$SECONDS
-# START_INDIVIDUALS
+# STAGE_IN_INDIVIDUALS
 # wait
 # duration=$(($SECONDS - $start_time))
-# echo "individuals : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# individuals_time_list+=(${duration})
+# echo "data stage-in for individuals : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
 
-# # # Stage 2 : Individuals merge + Sifting
-# # start_time=$SECONDS
-# # echo "Start individuals_merge on ${CURRENT_DIR}"
-# # START_INDIVIDUALS_MERGE
-# # wait
-# # duration=$(($SECONDS - $start_time))
-# # echo "individuals_merge+sifting : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# # echo "Start Sifting on ${CURRENT_DIR}"
-# # start_time=$SECONDS
-# # START_SIFTING
-# # wait
-# # duration=$(($SECONDS - $start_time))
-# # echo "sifting : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
+
+# Stage 1 : Individuals
+echo
+echo "Start individuals CHROMOSOME on ${CURRENT_DIR}"
+echo
+start_time=$SECONDS
+START_INDIVIDUALS
+wait
+duration=$(($SECONDS - $start_time))
+echo "individuals : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
+individuals_time_list+=(${duration})
 
 # # Stage 2 : Individuals merge + Sifting
 # start_time=$SECONDS
-# echo
-# echo "Start individuals_merge and sifting on ${CURRENT_DIR}"
-# echo 
+# echo "Start individuals_merge on ${CURRENT_DIR}"
 # START_INDIVIDUALS_MERGE
-# START_SIFTING
 # wait
 # duration=$(($SECONDS - $start_time))
 # echo "individuals_merge+sifting : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# merge_sifting_time_list+=(${duration})
-
-
-# # Stage 3 : Mutation overlap + Frequency
+# echo "Start Sifting on ${CURRENT_DIR}"
 # start_time=$SECONDS
-# echo
-# echo "Start mutation_overlap on ${CURRENT_DIR}"
-# echo
-# START_MUTATION_OVERLAP
+# START_SIFTING
 # wait
 # duration=$(($SECONDS - $start_time))
-# echo "mutation_overlap : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# mutation_overlap_time_list+=(${duration})
+# echo "sifting : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
 
-# start_time=$SECONDS
-# echo
-# echo "Start frequency on ${CURRENT_DIR}"
-# echo
-# START_FREQUENCY
-# wait
-# duration=$(($SECONDS - $start_time))
-# echo "frequency : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# frequency_time_list+=(${duration})
-
-
-# duration=$(($SECONDS - $workflow_start_time))
-# echo "All_tasks_done : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# workflow_time_list+=(${duration})
-
-# # set -x
-# # check output
-# # echo "Checking all output ----------------"
-# # srun -n$NUM_NODES -w $host_list --exclusive du -h $CURRENT_DIR
-
-# duration=$(($SECONDS - $total_time_start))
-# echo "All_tasks+Prepare_data : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
-# total_time_list+=(${duration})
-
-# LOCAL_CLEANUP
+# Stage 2 : Individuals merge + Sifting
+start_time=$SECONDS
 echo
-echo "Cleaning up"
+echo "Start individuals_merge and sifting on ${CURRENT_DIR}"
 echo 
-CLEANUP
+START_INDIVIDUALS_MERGE
+START_SIFTING
+wait
+duration=$(($SECONDS - $start_time))
+echo "individuals_merge+sifting : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
+merge_sifting_time_list+=(${duration})
+
+
+# Stage 3 : Mutation overlap + Frequency
+start_time=$SECONDS
+echo
+echo "Start mutation_overlap on ${CURRENT_DIR}"
+echo
+START_MUTATION_OVERLAP
+wait
+duration=$(($SECONDS - $start_time))
+echo "mutation_overlap : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
+mutation_overlap_time_list+=(${duration})
+
+start_time=$SECONDS
+echo
+echo "Start frequency on ${CURRENT_DIR}"
+echo
+START_FREQUENCY
+wait
+duration=$(($SECONDS - $start_time))
+echo "frequency : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
+frequency_time_list+=(${duration})
+
+
+duration=$(($SECONDS - $workflow_start_time))
+echo "All_tasks_done : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
+workflow_time_list+=(${duration})
+
+# set -x
+# check output
+# echo "Checking all output ----------------"
+# srun -n$NUM_NODES -w $host_list --exclusive du -h $CURRENT_DIR
+
+duration=$(($SECONDS - $total_time_start))
+echo "All_tasks+Prepare_data : $(($duration / 60)) minutes and $(($duration % 60)) seconds elapsed ($duration secs)."
+total_time_list+=(${duration})
+
+# # LOCAL_CLEANUP
+# echo
+# echo "Cleaning up"
+# echo 
+# CLEANUP
 
 # Change back PWD
 cd "${PREV_PWD}"
@@ -615,60 +521,60 @@ sacct -j $SLURM_JOB_ID -o jobid,submit,start,end,state
 # Save performance numbers
 ###########################
 
-# # Save the times
-# collect_file="${PREV_PWD}/R.${SLURM_JOB_NAME}.${SLURM_JOBID}.all_times.csv"
-# :> ${collect_file}
-# echo "${col_header}" >> ${collect_file}
+# Save the times
+collect_file="${PREV_PWD}/R.${SLURM_JOB_NAME}.${SLURM_JOBID}.all_times.csv"
+:> ${collect_file}
+echo "${col_header}" >> ${collect_file}
 
-# echo -n "individuals(s)" >> ${collect_file}
-# for time in "${individuals_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
+echo -n "individuals(s)" >> ${collect_file}
+for time in "${individuals_time_list[@]}"; do
+    echo -n ",${time}" >> ${collect_file}
+done
+echo >> ${collect_file}
 
-# echo -n "individuals_merge+sifting(s)" >> ${collect_file}
-# for time in "${merge_sifting_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
+echo -n "individuals_merge+sifting(s)" >> ${collect_file}
+for time in "${merge_sifting_time_list[@]}"; do
+    echo -n ",${time}" >> ${collect_file}
+done
+echo >> ${collect_file}
 
-# echo -n "mutation_overlap(s)" >> ${collect_file}
-# for time in "${mutation_overlap_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
+echo -n "mutation_overlap(s)" >> ${collect_file}
+for time in "${mutation_overlap_time_list[@]}"; do
+    echo -n ",${time}" >> ${collect_file}
+done
+echo >> ${collect_file}
 
-# echo -n "frequency(s)" >> ${collect_file}
-# for time in "${frequency_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
+echo -n "frequency(s)" >> ${collect_file}
+for time in "${frequency_time_list[@]}"; do
+    echo -n ",${time}" >> ${collect_file}
+done
+echo >> ${collect_file}
 
-# echo -n "all_tasks(s)" >> ${collect_file}
-# for time in "${workflow_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
+echo -n "all_tasks(s)" >> ${collect_file}
+for time in "${workflow_time_list[@]}"; do
+    echo -n ",${time}" >> ${collect_file}
+done
+echo >> ${collect_file}
 
-# echo -n "prepare_data(s)" >> ${collect_file}
-# for time in "${prepare_data_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
+echo -n "prepare_data(s)" >> ${collect_file}
+for time in "${prepare_data_time_list[@]}"; do
+    echo -n ",${time}" >> ${collect_file}
+done
+echo >> ${collect_file}
 
-# echo -n "all_tasks+prep_data(s)" >> ${collect_file}
-# for time in "${total_time_list[@]}"; do
-#     echo -n ",${time}" >> ${collect_file}
-# done
-# echo >> ${collect_file}
+echo -n "all_tasks+prep_data(s)" >> ${collect_file}
+for time in "${total_time_list[@]}"; do
+    echo -n ",${time}" >> ${collect_file}
+done
+echo >> ${collect_file}
 
-# echo 
-# echo "Saved to ${collect_file}"
-# echo 
+echo 
+echo "Saved to ${collect_file}"
+echo 
 
-# echo
-# csvlook ${collect_file}
-# echo
+echo
+csvlook ${collect_file}
+echo
 
 
 TT_TIME_END=$(date +%s.%N)
@@ -676,6 +582,3 @@ TT_TIME_EXE=$(echo "${TT_TIME_END} - ${TT_TIME_START}" | bc -l)
 echo
 echo "TT_TIME_EXE(s): ${TT_TIME_EXE}"
 echo
-
-collect_file="${PREV_PWD}/R.${SLURM_JOB_NAME}.${SLURM_JOBID}.all_times.csv"
-echo "TT_TIME_EXE(s): ${TT_TIME_EXE}" > ${collect_file}

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="debug_1kgenome_no-datalife"
+#SBATCH --job-name="debug_datalife_1kgenome"
 #SBATCH --partition=slurm
 ######SBATCH --exclude=dc[119,077]
 #SBATCH --account=datamesh
@@ -95,8 +95,9 @@ SIZE_37G_IN_KB=37346388
 PREV_PWD=$(readlink -f .)
 DATASET_DIR_NAME="workspace.${SLURM_JOBID}.${SLURM_JOB_NAME}"
 DATALIFE_LIB_PATH="/qfs/projects/oddite/peng599/FlowForecaster/datalife/build/flow-monitor/src/libmonitor.so"
+# DATALIFE_LIB_PATH="/qfs/projects/oddite/lenny/projects/datalife/install/lib/libmonitor.so"
 
-export DATALIFE_OUTPUT_PATH="${PREV_PWD}/datalife_stats"
+export DATALIFE_OUTPUT_PATH="${PREV_PWD}/datalife_stats.${SLURM_JOB_NAME}.${SLURM_JOBID}"
 export DATALIFE_FILE_PATTERNS="\
 *.fits, *.vcf, *.lht, *.fna, *.*.bt2, \
 *.fastq, *.fasta.amb, *.fasta.sa, *.fasta.bwt, *.fasta.pac, \
@@ -455,10 +456,14 @@ echo "#########################"
 echo
 
 set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 1 201 6000 &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 201 401 6000 &
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 401 601 6000 &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 601 801 6000 &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 1 201 6000 &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 201 401 6000 &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 401 601 6000 &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals.py $CURRENT_DIR/ALL.chr1.250000.vcf 1 601 801 6000 &
 set +x
 wait
 
@@ -471,13 +476,14 @@ echo "###############################"
 echo
 
 set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals_merge.py 1 \
-    $CURRENT_DIR/chr1n-1-201.tar.gz \
-    $CURRENT_DIR/chr1n-201-401.tar.gz \
-    $CURRENT_DIR/chr1n-401-601.tar.gz \
-    $CURRENT_DIR/chr1n-601-801.tar.gz &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/individuals_merge.py 1 \
+        $CURRENT_DIR/chr1n-1-201.tar.gz \
+        $CURRENT_DIR/chr1n-201-401.tar.gz \
+        $CURRENT_DIR/chr1n-401-601.tar.gz \
+        $CURRENT_DIR/chr1n-601-801.tar.gz &
 set +x
-wait
+
 
 echo
 echo "#####################"
@@ -486,7 +492,8 @@ echo "#####################"
 echo
 
 set -x
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/sifting.py $CURRENT_DIR/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf 1 &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/sifting.py $CURRENT_DIR/ALL.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.sites.annotation.vcf 1 &
 set +x
 wait
 
@@ -499,8 +506,10 @@ echo "##############################"
 echo
 
 set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c 1 -pop EAS &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c 1 -pop AMR &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c 1 -pop EAS &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/mutation_overlap.py -c 1 -pop AMR &
 set +x
 wait
 
@@ -511,8 +520,10 @@ echo "#######################"
 echo
 
 set -x
-srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c 1 -pop EAS &
-srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c 1 -pop AMR &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[0]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c 1 -pop EAS &
+LD_PRELOAD=$DATALIFE_LIB_PATH \
+    srun -w "${list[1]}" -n1 -N1 --exclusive $PYTHON_PATH $SCRIPT_DIR/frequency.py -c 1 -pop AMR &
 set +x
 wait
 

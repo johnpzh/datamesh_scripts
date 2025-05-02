@@ -7,12 +7,14 @@ __pycache__
 
 # Data
 1kgenome_sbatch_deception/
+*.vcf
 
 # Output files
 *.csv
 *.err
 *.out
 *.log
+output*/
 
 # DataLife files
 datalife_stats*/
